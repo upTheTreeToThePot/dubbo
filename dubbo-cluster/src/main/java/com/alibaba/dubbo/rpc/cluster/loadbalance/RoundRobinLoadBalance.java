@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * Round robin load balance.
+ * 轮询策略
  *
  */
 public class RoundRobinLoadBalance extends AbstractLoadBalance {

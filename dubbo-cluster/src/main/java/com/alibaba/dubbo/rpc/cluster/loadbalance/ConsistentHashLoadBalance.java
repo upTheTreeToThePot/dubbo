@@ -32,10 +32,11 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * ConsistentHashLoadBalance
- *
+ * 一致性Hash 负载均衡
  */
 public class ConsistentHashLoadBalance extends AbstractLoadBalance {
 
+    // 每一个methodKey，对应一个hash环
     private final ConcurrentMap<String, ConsistentHashSelector<?>> selectors = new ConcurrentHashMap<String, ConsistentHashSelector<?>>();
 
     @SuppressWarnings("unchecked")
@@ -65,7 +66,9 @@ public class ConsistentHashLoadBalance extends AbstractLoadBalance {
             this.virtualInvokers = new TreeMap<Long, Invoker<T>>();
             this.identityHashCode = identityHashCode;
             URL url = invokers.get(0).getUrl();
+            // 获取虚拟姐节点数，默认为160
             this.replicaNumber = url.getMethodParameter(methodName, "hash.nodes", 160);
+            // 获取参与 hash计算的参数下标，默认对第一个参数进行hash 运算
             String[] index = Constants.COMMA_SPLIT_PATTERN.split(url.getMethodParameter(methodName, "hash.arguments", "0"));
             argumentIndex = new int[index.length];
             for (int i = 0; i < index.length; i++) {
