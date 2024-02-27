@@ -90,6 +90,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     protected ModuleConfig module;
 
     // registry centers
+    // 注册中心
     protected List<RegistryConfig> registries;
 
     // connection events
@@ -158,23 +159,37 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    /**
+     * 获取所有的注册中心
+     * Dubbo 允许多协议注册中心的实现，这里会解析出所有的注册中心
+     * @param provider
+     * @return
+     */
     protected List<URL> loadRegistries(boolean provider) {
         checkRegistry();
         List<URL> registryList = new ArrayList<URL>();
+        // 遍历所有注册中心
         if (registries != null && registries.size() > 0) {
             for (RegistryConfig config : registries) {
                 String address = config.getAddress();
+                // 如果注册中心地址为空，则设置为默认ip地址 0.0.0.0
                 if (address == null || address.length() == 0) {
                     address = Constants.ANYHOST_VALUE;
                 }
+                // 如果配置了系统变量，则使用系统变量
                 String sysaddress = System.getProperty("dubbo.registry.address");
                 if (sysaddress != null && sysaddress.length() > 0) {
                     address = sysaddress;
                 }
+                // 排除不可用地址
+                // 不可用地址标准：1。地址为空   2。地址为N/A
                 if (address != null && address.length() > 0
                         && !RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
+                    // 保存注册中心相关的配置
                     Map<String, String> map = new HashMap<String, String>();
+                    // 解析 ApplicationConfig 中的配置，用于作为注册中心的配置
                     appendParameters(map, application);
+                    // 解析 RegistryConfig 中的配置，用于作为注册中心的配置
                     appendParameters(map, config);
                     map.put("path", RegistryService.class.getName());
                     map.put("dubbo", Version.getVersion());
@@ -182,6 +197,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     if (ConfigUtils.getPid() > 0) {
                         map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
                     }
+                    /// 填充协议
                     if (!map.containsKey("protocol")) {
                         if (ExtensionLoader.getExtensionLoader(RegistryFactory.class).hasExtension("remote")) {
                             map.put("protocol", "remote");
@@ -189,10 +205,16 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                             map.put("protocol", "dubbo");
                         }
                     }
+                    // 解析出所有的注地址url
                     List<URL> urls = UrlUtils.parseURLs(address, map);
                     for (URL url : urls) {
+                        // 保存服务暴露使用的注册协议
                         url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
+                        // 设置 url 协议为 registry，表示当前URL 用于配置注册中心
                         url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
+                        // 满足两个条件会将url 添加到 registryList 中
+                        // 1。服务提供者且想要注册中心注册
+                        // 2。不是服务提供者，但是订阅了注册中心
                         if ((provider && url.getParameter(Constants.REGISTER_KEY, true))
                                 || (!provider && url.getParameter(Constants.SUBSCRIBE_KEY, true))) {
                             registryList.add(url);

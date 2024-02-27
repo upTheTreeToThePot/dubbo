@@ -30,12 +30,27 @@ import java.lang.reflect.InvocationTargetException;
  */
 public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
 
+    /**
+     * final类型变量，指向服务提供者
+      */
     private final T proxy;
 
+    /**
+     * final类型变量，服务的接口类型
+     */
     private final Class<T> type;
 
+    /**
+     * final1类型变量，携带服务地址、端口等多种信息的自定义URL对象
+     */
     private final URL url;
 
+    /**
+     * 构造函数，属性均为final属性，赋值后属性值不可变
+     * @param proxy 服务提供者
+     * @param type 服务接口类型
+     * @param url 服务地址、端口等信息的自定义URL对象
+     */
     public AbstractProxyInvoker(T proxy, Class<T> type, URL url) {
         if (proxy == null) {
             throw new IllegalArgumentException("proxy == null");

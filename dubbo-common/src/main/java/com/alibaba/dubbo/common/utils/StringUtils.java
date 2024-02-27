@@ -383,6 +383,13 @@ public final class StringUtils {
         return buf.toString();
     }
 
+    /**
+     * 将驼峰命名的字符串转换为以指定分隔符分割的字符串
+     *
+     * @param camelName 驼峰命名的字符串
+     * @param split 分隔符
+     * @return 以指定分隔符分割的字符串
+     */
     public static String camelToSplitName(String camelName, String split) {
         if (camelName == null || camelName.length() == 0) {
             return camelName;

@@ -124,16 +124,24 @@ public class UrlUtils {
         return u;
     }
 
+    /**
+     * 解析 模版： zookeeper://localhost:2181, zookeeper://localhost:2182
+     * @param address
+     * @param defaults
+     * @return
+     */
     public static List<URL> parseURLs(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
             return null;
         }
+        // 将注册中心分割，因为注册中心可能会存在多个
         String[] addresses = Constants.REGISTRY_SPLIT_PATTERN.split(address);
         if (addresses == null || addresses.length == 0) {
             return null; //here won't be empty
         }
         List<URL> registries = new ArrayList<URL>();
         for (String addr : addresses) {
+            // 解析出来的每个地址，转化为URL
             registries.add(parseURL(addr, defaults));
         }
         return registries;

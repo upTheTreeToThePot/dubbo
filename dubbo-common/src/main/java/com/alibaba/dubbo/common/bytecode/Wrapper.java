@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 
 /**
  * Wrapper.
+ * 包装类。主要用于包裹目标类
  */
 public abstract class Wrapper {
     private static final Map<Class<?>, Wrapper> WRAPPER_MAP = new ConcurrentHashMap<Class<?>, Wrapper>(); //class wrapper map
@@ -117,10 +118,18 @@ public abstract class Wrapper {
         c2.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
         c3.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
 
-        Map<String, Class<?>> pts = new HashMap<String, Class<?>>(); // <property name, property types>
-        Map<String, Method> ms = new LinkedHashMap<String, Method>(); // <method desc, Method instance>
-        List<String> mns = new ArrayList<String>(); // method names.
-        List<String> dmns = new ArrayList<String>(); // declaring method names.
+        // <property name, property types>
+        // 存储成员的变量名和类型
+        Map<String, Class<?>> pts = new HashMap<String, Class<?>>();
+        // <method desc, Method instance>
+        // 存储方法的描述和方法实例
+        Map<String, Method> ms = new LinkedHashMap<String, Method>();
+        // method names.
+        // 方法名称列表
+        List<String> mns = new ArrayList<String>();
+        // declaring method names.
+        // 定义在当前类中的方法 的名称列表
+        List<String> dmns = new ArrayList<String>();
 
         // get all public field.
         for (Field f : c.getFields()) {
