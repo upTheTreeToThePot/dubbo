@@ -51,8 +51,12 @@ public class Transporters {
         if (handlers.length == 1) {
             handler = handlers[0];
         } else {
+            // 如果有多个 Handlers，则使用channelHandlerDispatcher 来分发处理
             handler = new ChannelHandlerDispatcher(handlers);
         }
+
+        // 1. getTransporter()：通过SPI 获取到来默认的 Transporter 实现 NettyTransporter
+        // 2. bind(url, handler)：实现是 NettyTransporter.bind(url, handler)，完成来绑定了当前服务
         return getTransporter().bind(url, handler);
     }
 

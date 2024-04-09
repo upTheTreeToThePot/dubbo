@@ -49,7 +49,9 @@ public class QosProtocolWrapper implements Protocol {
 
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // 如果当前协议是 Registry 类型，则会开启QOS，这里的QOS只会启动一次
         if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
+            // 启动QOS服务，其中通过Cas 判断是否已经开启过，确保只启动一次
             startQosServer(invoker.getUrl());
             return protocol.export(invoker);
         }
@@ -58,6 +60,7 @@ public class QosProtocolWrapper implements Protocol {
 
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        // 如果当前协议是 Registry 类型，则会开启QOS，这里的QOS只会启动一次
         if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
             startQosServer(url);
             return protocol.refer(type, url);

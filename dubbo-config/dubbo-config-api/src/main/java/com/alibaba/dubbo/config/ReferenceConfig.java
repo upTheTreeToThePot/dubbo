@@ -338,6 +338,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
         URL tmpUrl = new URL("temp", "localhost", 0, map);
+        // 判断是否是本地引用
         final boolean isJvmRefer;
         if (isInjvm() == null) {
             if (url != null && url.length() > 0) { // if a url is specified, don't do local reference
@@ -352,8 +353,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             isJvmRefer = isInjvm().booleanValue();
         }
 
+        // 本地调用
         if (isJvmRefer) {
+            // 创建一个本地URL，其中host 是 127.0.0.1，port=0，协议为 injvm，这些参数与服务导出时的一致
             URL url = new URL(Constants.LOCAL_PROTOCOL, NetUtils.LOCALHOST, 0, interfaceClass.getName()).addParameters(map);
+            // 由于此时url 的协议类型为 Injvm，refprotocol 通过SPI 机制获取到 InjvmProtocol，从而获取到 InjvmInvoker
             invoker = refprotocol.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());

@@ -126,29 +126,43 @@ public class RegistryProtocol implements Protocol {
 
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
         //export invoker
+        // 进行服务暴露，这里会调用真正协议的export方法
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
 
+        // 获取注册中心地址
         URL registryUrl = getRegistryUrl(originInvoker);
 
         //registry provider
+        // 获取注册中心实例，根据调用者的地址获取注册表的实例
         final Registry registry = getRegistry(originInvoker);
+        // 获取当前注册的服务提供者的url，如果开启了简化URL，则返回的是简化的URL
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
 
         //to judge to delay publish whether or not
+        // 判断服务是否需要延迟发布，延迟发布不会立即注册，否则进行注册
         boolean register = registedProviderUrl.getParameter("register", true);
 
+        // 向ProviderConsumerRegTable 中注册生产者的消息
         ProviderConsumerRegTable.registerProvider(originInvoker, registryUrl, registedProviderUrl);
 
+        // 如果没有延迟注册，需要注册
         if (register) {
+            // 调用远端注册中心的register 方法进行注册
+            // 此时如果有消费者订阅了改服务，则推送消息让消费者引用此服务
+            // 注册中心缓存了所有提供者注册的服务以提供消费者发现
             register(registryUrl, registedProviderUrl);
+            // 将当前服务设置为已注册
             ProviderConsumerRegTable.getProviderWrapper(originInvoker).setReg(true);
         }
 
         // Subscribe the override data
         // FIXME When the provider subscribes, it will affect the scene : a certain JVM exposes the service and call the same service. Because the subscribed is cached key with the name of the service, it causes the subscription information to cover.
+        // 订阅override数据URL
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registedProviderUrl);
+        // 监听器，当监听的节点发生变化的时候，会回调该监听器
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl, originInvoker);
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
+        // 订阅符合条件的已登记数据，并在已登记数据发生变化时自动推送
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
         //Ensure that a new exporter instance is returned every time export
         return new DestroyableExporter<T>(exporter, originInvoker, overrideSubscribeUrl, registedProviderUrl);
@@ -156,6 +170,7 @@ public class RegistryProtocol implements Protocol {
 
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker) {
+        // 获取 originInvoker 的缓存key
         String key = getCacheKey(originInvoker);
         ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
         if (exporter == null) {
@@ -200,10 +215,18 @@ public class RegistryProtocol implements Protocol {
         return registryFactory.getRegistry(registryUrl);
     }
 
+    /**
+     * 获取注册中心地址
+     * @param originInvoker
+     * @return
+     */
     private URL getRegistryUrl(Invoker<?> originInvoker) {
         URL registryUrl = originInvoker.getUrl();
+        // 如果协议是register，则说明当前URL 保存了注册中心的地址
         if (Constants.REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
+            // 通过Constants.REGISTRY_KEY来获取注册中心的类型，默认是 dubbo
             String protocol = registryUrl.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_DIRECTORY);
+            // 将协议替换为注册中心，做Constants.REGISTRY_KEY 移除
             registryUrl = registryUrl.setProtocol(protocol).removeParameter(Constants.REGISTRY_KEY);
         }
         return registryUrl;
@@ -217,6 +240,7 @@ public class RegistryProtocol implements Protocol {
      * @return
      */
     private URL getRegistedProviderUrl(final Invoker<?> originInvoker) {
+        // 获取需要暴露的服务URL的信息
         URL providerUrl = getProviderUrl(originInvoker);
         //The address you see at the registry
         final URL registedProviderUrl = providerUrl.removeParameters(getFilteredKeys(providerUrl))
@@ -229,6 +253,11 @@ public class RegistryProtocol implements Protocol {
         return registedProviderUrl;
     }
 
+    /**
+     *
+     * @param registedProviderUrl
+     * @return
+     */
     private URL getSubscribedOverrideUrl(URL registedProviderUrl) {
         return registedProviderUrl.setProtocol(Constants.PROVIDER_PROTOCOL)
                 .addParameters(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY,

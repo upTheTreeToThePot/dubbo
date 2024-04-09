@@ -49,19 +49,31 @@ public class ProtocolListenerWrapper implements Protocol {
         return protocol.getDefaultPort();
     }
 
+    /**
+     * 服务导出
+     * @param invoker Service invoker
+     * @return
+     * @param <T>
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // 如果是注册中心协议，则直接导出
         if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             return protocol.export(invoker);
         }
+        // 否则对 Exporter 进行增强，这里是获取SPI 接口 ExporterListener 的实现类作为入参
         return new ListenerExporterWrapper<T>(protocol.export(invoker),
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
                         .getActivateExtension(invoker.getUrl(), Constants.EXPORTER_LISTENER_KEY)));
     }
 
+    // 引用
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        // 如果是注册中心协议，则直接使用
         if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
             return protocol.refer(type, url);
         }
+        // 否则对 Exporter 进行增强，这里是获取SPI 接口 InvokerListener 的实现类作为入参
         return new ListenerInvokerWrapper<T>(protocol.refer(type, url),
                 Collections.unmodifiableList(
                         ExtensionLoader.getExtensionLoader(InvokerListener.class)

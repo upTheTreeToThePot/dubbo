@@ -128,10 +128,13 @@ public class HeaderExchangeServer implements ExchangeServer {
         request.setTwoWay(false);
         request.setVersion(Version.getVersion());
 
+        // 获取连接通路
         Collection<Channel> channels = getChannels();
         for (Channel channel : channels) {
             try {
+                // 如果还保持连接
                 if (channel.isConnected())
+                    // 发送只读事件
                     channel.send(request, getUrl().getParameter(Constants.CHANNEL_READONLYEVENT_SENT_KEY, true));
             } catch (RemotingException e) {
                 logger.warn("send connot write messge error.", e);

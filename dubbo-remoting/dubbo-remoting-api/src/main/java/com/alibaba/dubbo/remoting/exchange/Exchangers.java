@@ -66,7 +66,10 @@ public class Exchangers {
         if (handler == null) {
             throw new IllegalArgumentException("handler == null");
         }
+        // 如果codec 没有默认值，则添加 exchange。但是在基础的参数设置中我们已经指定了编码器为 dubbo
         url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");
+        // 1. getExchanger(url)：获取url 中的 exchanger 属性来获取到 Exchanger，默认是Header
+        // 2. bind(url, handler)：第一步中默认是 HeaderExchanger，所以这里实际上是 HeaderExchanger#bind(url, handler)
         return getExchanger(url).bind(url, handler);
     }
 
@@ -114,6 +117,7 @@ public class Exchangers {
         return getExchanger(type);
     }
 
+    // 通过SPI 获取 Exchanger
     public static Exchanger getExchanger(String type) {
         return ExtensionLoader.getExtensionLoader(Exchanger.class).getExtension(type);
     }

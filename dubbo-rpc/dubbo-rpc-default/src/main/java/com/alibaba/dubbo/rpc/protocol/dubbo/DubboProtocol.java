@@ -222,9 +222,11 @@ public class DubboProtocol extends AbstractProtocol {
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         URL url = invoker.getUrl();
 
-        // 出口服务
+        // 获取要暴露服务的key，结构为： 协议/接口地址:版本:端口号
         String key = serviceKey(url);
+        // 封装成 Export。
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
+        // 在当前exporterMap 中保存当前应用的发布
         exporterMap.put(key, exporter);
 
         // 出口一个用于分发事件的代理服务
@@ -242,13 +244,19 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        // 开启服务，默认是netty，同一个记起的不同接口服务只会开启一个NettyServer
         openServer(url);
 
         return exporter;
     }
 
+    /**
+     * 不同的接口也会使用同一个server
+     * @param url
+     */
     private void openServer(URL url) {
         // find server.
+        // key = host + port
         String key = url.getAddress();
         //client can export a service which's only for server to invoke
         boolean isServer = url.getParameter(Constants.IS_SERVER_KEY, true);
@@ -265,21 +273,32 @@ public class DubboProtocol extends AbstractProtocol {
 
     private ExchangeServer createServer(URL url) {
         // send readonly event when server closes, it's enabled by default
+        // **** 1.参数设置 ****
+        // 默认启动服务器关闭时发送只读事件
         url = url.addParameterIfAbsent(Constants.CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString());
+
         // enable heartbeat by default
+        // 默认启动心跳，默认值60s
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
+
+        // 获取传输协议，默认为netty
         String str = url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_SERVER);
 
+        // 根据 Constants.SERVER_KEY(server) 校验对应的SPI 实现接口
         if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str))
             throw new RpcException("Unsupported server type: " + str + ", url: " + url);
 
+        // 设置编解码器为 dubbo
         url = url.addParameter(Constants.CODEC_KEY, DubboCodec.NAME);
+        // **** 2.开启服务端口 ****
         ExchangeServer server;
         try {
+            // 2.1 绑定ip端口，开启服务，这里的server 默认是 NettyServer，需要注意的是这里传入的 requestHandler 是最终处理消息的处理器
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
         }
+        // 2.2 校验客户端的传输协议
         str = url.getParameter(Constants.CLIENT_KEY);
         if (str != null && str.length() > 0) {
             Set<String> supportedTypes = ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions();

@@ -38,6 +38,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
+    //  exporterMap 中保存的是本机暴露的服务接口列表，在服务中调用 Export#unexport 时会将服务从exporterMap中移除
     protected final Map<String, Exporter<?>> exporterMap = new ConcurrentHashMap<String, Exporter<?>>();
 
     //TODO SOFEREFENCE
